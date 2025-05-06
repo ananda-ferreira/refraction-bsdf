@@ -223,7 +223,7 @@ vec3 ComputeSpecularReflection(SurfaceData data, vec3 lightDir, vec3 viewDir)
 	return specularReflection;
 }
 
-vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir)
+vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir, vec3 viewDir)
 {
 	float cosThetaIn = clamp(dot(data.normal, lightDir), -1, 1);
 	float etaI = 1.0f, etaT = data.refractionIndex;
@@ -236,11 +236,11 @@ vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir)
 	
 	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaI, etaT);
 	if(cosThetaTr <= 0.0f) return vec3(0.0f); // total internal reflection
-	// if (entering) cos_thetaT *= -1; // why?
+	if (IsEntering(cosThetaIn)) cosThetaTr *= -1; // why?
 
 	float etaEff = etaI / etaT;
 	// vec3 transmissionDir = vec3(etaEff * -wo.x, etaEff * -wo.y, cos_thetaT);
-	vec3 transmissionDir = refract(-lightDir, data.normal, etaEff);
+	vec3 transmissionDir = refract(-viewDir, data.normal, etaEff);
 	float lodLevel = pow(data.roughness, 0.25f);
 	vec3 specularLighting = SampleEnvironment(transmissionDir, lodLevel);
 

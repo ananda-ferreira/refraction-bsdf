@@ -16,6 +16,9 @@ uniform sampler2D SpecularTexture;
 
 uniform vec3 CameraPosition;
 
+// Project specific
+uniform float refractionIndex;
+
 void main()
 {
 	SurfaceData data;

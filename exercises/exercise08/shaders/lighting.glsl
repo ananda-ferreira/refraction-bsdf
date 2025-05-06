@@ -45,7 +45,7 @@ vec3 ComputeBSDFLight(SurfaceData data, vec3 viewDir, vec3 position)
 	vec3 lightDir = ComputeLightDirection(position);
 
 	vec3 reflection = ComputeSpecularReflection(data, lightDir, viewDir);
-	vec3 transmission = ComputeSpecularTransmission(data, lightDir);
+	vec3 transmission = ComputeSpecularTransmission(data, lightDir, viewDir);
 	vec3 light = ComputeScatteredLighting(reflection, transmission, data, lightDir);
 
 	// what is attenuation
