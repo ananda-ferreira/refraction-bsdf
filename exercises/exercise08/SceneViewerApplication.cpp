@@ -102,10 +102,10 @@ void SceneViewerApplication::InitializeLights()
     // m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
 
     // Create a point light and add it to the scene
-    //std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-    //pointLight->SetPosition(glm::vec3(0, 0, 0));
-    //pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
-    //m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
+    std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
+    pointLight->SetPosition(glm::vec3(0, 0, 0));
+    pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
+    m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
 }
 
 void SceneViewerApplication::InitializeMaterial()
