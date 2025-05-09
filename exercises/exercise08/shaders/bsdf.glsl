@@ -2,9 +2,6 @@
 uniform samplerCube EnvironmentTexture;
 uniform float EnvironmentMaxLod;
 
-// data of point aka fragment
-// should refractionIndex be here? it's alwasy the same
-// remove metalness
 struct SurfaceData
 {
 	vec3 normal;
@@ -43,7 +40,7 @@ float GetCosThetaTr(float cosThetaIn, float eta)
 	return cosThetaTr;
 }
 
-float FresnelDielectric(float cosThetaIn, float etaIn, float etaTr)
+float FresnelBSDF(float cosThetaIn, float etaIn, float etaTr)
 {
 	// cosThetaIn = clamp(cosThetaIn, -1, 1);
 
@@ -210,10 +207,8 @@ vec3 ComputeSpecularReflection(SurfaceData data, vec3 viewDir)
 
 vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir, vec3 viewDir, vec3 inDir)
 {
-	// float etaI = 1.0f, etaT = data.refractionIndex;
-	float etaRatio = data.refractionIndex / 1.0f ;
-
 	// vec3 inDir = - viewDir;
+	float etaRatio = data.refractionIndex / 1.0f ;
 
 	float cosThetaIn = clamp(dot(data.normal, inDir), -1, 1);
 	bool isEntering = cosThetaIn > 0;
@@ -221,19 +216,17 @@ vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir, vec3 viewDir, 
 	if (!isEntering)
 	{
 		etaRatio = 1 / etaRatio;
-		// etaI = data.refractionIndex, etaT = 1.0f;
 		cosThetaIn = abs(cosThetaIn); // why?
 	}
 	
 	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaRatio);
 	if(cosThetaTr <= 0.0f) return vec3(0.0f); // total internal reflection
 	// if (isEntering) cosThetaTr *= -1; // why?
-
-	// float etaEff = etaT / etaI ;
 	
 	vec3 transmissionDir = refract( inDir, data.normal, etaRatio);
 	float lodLevel = pow(data.roughness, 0.6f);
 	vec3 specularTransmission = SampleEnvironment(transmissionDir, lodLevel);
+	
 	return specularTransmission; // + vec3(0.0f, 0.5 ,0);
 }
 
@@ -242,11 +235,10 @@ vec3 ComputeScatteredLighting(vec3 reflection, vec3 transmission, SurfaceData da
 	vec3 inDir = - viewDir;
 	float cosThetaIn = dot(inDir, data.normal);
 
-	float fresnel = FresnelDielectric(cosThetaIn, 1.0f, data.refractionIndex);
+	float fresnel = FresnelBSDF(cosThetaIn, 1.0f, data.refractionIndex);
 	vec3 lighting = mix(transmission, reflection, fresnel);
 	lighting *= data.ambientOcclusion;
 
-	// // // what is this?
 	// // Move the incidence factor to affect the combined light value
 	// float incidence = ClampedDot(data.normal, lightDir);
 	// lighting *= incidence;
