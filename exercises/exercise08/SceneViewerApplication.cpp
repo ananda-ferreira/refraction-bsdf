@@ -103,7 +103,7 @@ void SceneViewerApplication::InitializeLights()
 
     // Create a point light and add it to the scene
     std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-    pointLight->SetPosition(glm::vec3(0, 0, 0));
+    pointLight->SetPosition(glm::vec3(0, 2.0, 0));
     pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
     m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
 }
@@ -164,7 +164,7 @@ void SceneViewerApplication::InitializeMaterial()
 
 void SceneViewerApplication::InitializeModels()
 {
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/pamp-env.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/pamp-env-2.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
 
     m_skyboxTexture->Bind();
     float maxLod;
@@ -176,6 +176,7 @@ void SceneViewerApplication::InitializeModels()
     m_defaultMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
     m_defaultMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
     m_defaultMaterial->SetUniformValue("Color", glm::vec3(1.0f));
+    m_defaultMaterial->SetUniformValue("RefractionIndex", 1.5f);
 
     // Configure loader
     ModelLoader loader(m_defaultMaterial);
@@ -209,8 +210,8 @@ void SceneViewerApplication::InitializeModels()
     std::shared_ptr<Model> teaSetModel = loader.LoadShared("models/tea_set/tea_set.obj");
     m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", teaSetModel));
 
-    //std::shared_ptr<Model> clockModel = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
-    //m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel));
+    // std::shared_ptr<Model> clockModel = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
+    // m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel));
 }
 
 void SceneViewerApplication::InitializeRenderer()

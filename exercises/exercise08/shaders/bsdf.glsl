@@ -11,7 +11,7 @@ struct SurfaceData
 	vec3 albedo;
 	float ambientOcclusion;
 	float roughness;
-	float metalness;
+	// float metalness;
 	float refractionIndex;
 };
 
@@ -24,59 +24,45 @@ const float invPi = 0.31831f;
 // Get the surface albedo
 vec3 GetAlbedo(SurfaceData data)
 {
-	// return mix(data.albedo, vec3(0.0f), data.metalness);
-	return data.albedo; 
+	return data.albedo; // return mix(data.albedo, vec3(0.0f), data.metalness);
 }
 
 // Get the surface reflectance
 vec3 GetReflectance(SurfaceData data)
 {
 	// We use a fixed value for dielectric, with a typical value for these materials (4%)
-	// 4% applies to glass too. instead of albedo, rgba?
 	// return mix(vec3(0.04f), data.albedo, data.metalness); // when incl metalness
 	return vec3(0.04f);
 }
 
-/*
-Params:
-etaI: refraction index of incident material = air
-etaT: refraction index of transmission material = glass
-*/
-float GetCosThetaTr(float cosThetaIn, float etaI, float etaT)
+float GetCosThetaTr(float cosThetaIn, float eta)
 {
-	float sinThetaIn = sqrt(max(0.0f, 1.0f - cosThetaIn)); // why max?
-	float sinThetaTr = etaI / etaT * sinThetaIn ; // Snell's Law
-	float cosThetaTr = sqrt(max(0.0f, 1.0f - sinThetaTr * sinThetaTr)); // why sqrt??
+	float sinThetaIn2 = sqrt(max(0.0f, 1.0f - cosThetaIn )); // (sin theta)^2 + (cos theta)^2 = 1, (sin theta)^2 = 1 - (cos theta)^2
+	float sinThetaTr = sinThetaIn2 * eta; // Snell's Law // study ratio
+	float cosThetaTr = sqrt(max(0.0f, 1.0f - sinThetaTr * sinThetaTr )); 
 	return cosThetaTr;
 }
 
-// determins if light entering or exiting (coming from behind) material 
-// cosTheta should be clamped to -1,1, why though
-bool IsEntering(float cosThetaIn)
+float FresnelDielectric(float cosThetaIn, float etaIn, float etaTr)
 {
-	return cosThetaIn > 0;
-}
+	// cosThetaIn = clamp(cosThetaIn, -1, 1);
 
-// Fresnel with eta for transmission
-float FresnelDielectric(float cosThetaIn, float etaI, float etaT)
-{
-	cosThetaIn = clamp(cosThetaIn, -1, 1);
-
-	if (!IsEntering(cosThetaIn))
+	bool isEntering = cosThetaIn > 0;
+	float etaI = etaIn, etaT = etaTr;
+	if (!isEntering)
 	{
-		// swap(etaI, etaT);
-		etaI = etaT, etaT = 1.0f;
-		cosThetaIn = abs(cosThetaIn); // why?
+		float etaI = etaTr, etaT = etaIn;
+		cosThetaIn = abs(cosThetaIn); // why? or -cosThetaIn?
 	}
 	
-	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaI, etaT);
-	if(cosThetaTr <= 0.0f) return 1.0f; // incase of total internal reflection, no transmission
+	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaT/etaI);
+	if(cosThetaTr <= 0.0f) return 1.0f; // incase of total internal reflection -> no transmission
 
 	float f90 = ((etaT * cosThetaIn) - (etaI * cosThetaTr)) /
             	((etaT * cosThetaIn) + (etaI * cosThetaTr));
 	float f0 = ((etaI * cosThetaIn) - (etaT * cosThetaTr)) /
                 ((etaI * cosThetaIn) + (etaT * cosThetaTr));
-	return (f0 * f0 + f90 * f90) / 2.0f;
+	return (f0 * f0 + f90 * f90) / 2.0f ;
 }
 
 // Schlick simplification of the Fresnel term
@@ -169,11 +155,11 @@ vec3 CombineIndirectLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3
 /**
 Lighting
 */
-vec3 ComputeDiffuseLighting(SurfaceData data, vec3 lightDir)
-{
-	// Implement the lambertian equation for diffuse
-	return GetAlbedo(data) * invPi;
-}
+// vec3 ComputeDiffuseLighting(SurfaceData data, vec3 lightDir)
+// {
+// 	// Implement the lambertian equation for diffuse
+// 	return GetAlbedo(data) * invPi;
+// }
 
 vec3 ComputeSpecularLighting(SurfaceData data, vec3 lightDir, vec3 viewDir)
 {
@@ -189,14 +175,14 @@ vec3 ComputeSpecularLighting(SurfaceData data, vec3 lightDir, vec3 viewDir)
 	return vec3((D * G) / (4.0f * cosThetaO * cosThetaIn + 0.00001f));
 }
 
-vec3 CombineLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3 lightDir, vec3 viewDir)
+vec3 CombineLighting(vec3 specular, SurfaceData data, vec3 lightDir, vec3 viewDir)
 {
 	// Compute the Fresnel term between the half direction and the view direction
 	vec3 halfDir = normalize(viewDir + lightDir);
 	vec3 fresnel = FresnelSchlick(GetReflectance(data), viewDir, halfDir);
 
 	// Linearly interpolate between the diffuse and specular term, using the fresnel value
-	vec3 lighting = mix(diffuse, specular, fresnel);
+	vec3 lighting = mix(vec3(0), specular, fresnel);
 
 	// Move the incidence factor to affect the combined light value
 	float incidence = ClampedDot(data.normal, lightDir);
@@ -208,54 +194,56 @@ vec3 CombineLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3 lightDi
 /**
 BSDF (scales attenuation * lightcolor)
 */
-vec3 ComputeSpecularReflection(SurfaceData data, vec3 lightDir, vec3 viewDir)
+vec3 ComputeSpecularReflection(SurfaceData data, vec3 viewDir)
 {
-	// implement cook torrance with DG 
-	vec3 specularReflection = ComputeSpecularLighting(data, lightDir, viewDir);
+	vec3 inDir = -viewDir; // - viewDir, because viewDir should be point in not out (!)
+	vec3 reflectionDir = reflect(inDir, data.normal);
 
-	// Compute the reflection vector with the viewDir and the normal
+	vec3 specularReflection = vec3(1.0f) ; //* GeometrySmith(data.normal, reflectionDir, viewDir, data.roughness) ;
+
 	// Sample the environment map using the reflection vector, at a specific LOD level
-	// - viewDir, because viewDir should be point in not out (!)
-	vec3 reflectionDir = reflect(- viewDir, data.normal);
 	float lodLevel = pow(data.roughness, 0.25f);
 	specularReflection *= SampleEnvironment(reflectionDir, lodLevel);
 	
-	return specularReflection;
+	return specularReflection; // vec3(1.0,0,0);
 }
 
-vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir, vec3 viewDir)
+vec3 ComputeSpecularTransmission(SurfaceData data, vec3 lightDir, vec3 viewDir, vec3 inDir)
 {
-	float cosThetaIn = clamp(dot(data.normal, lightDir), -1, 1);
-	float etaI = 1.0f, etaT = data.refractionIndex;
+	// float etaI = 1.0f, etaT = data.refractionIndex;
+	float etaRatio = data.refractionIndex / 1.0f ;
 
-	if (!IsEntering(cosThetaIn))
+	// vec3 inDir = - viewDir;
+
+	float cosThetaIn = clamp(dot(data.normal, inDir), -1, 1);
+	bool isEntering = cosThetaIn > 0;
+
+	if (!isEntering)
 	{
-		etaI = etaT, etaT = 1.0f;
+		etaRatio = 1 / etaRatio;
+		// etaI = data.refractionIndex, etaT = 1.0f;
 		cosThetaIn = abs(cosThetaIn); // why?
 	}
 	
-	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaI, etaT);
+	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaRatio);
 	if(cosThetaTr <= 0.0f) return vec3(0.0f); // total internal reflection
-	if (IsEntering(cosThetaIn)) cosThetaTr *= -1; // why?
+	// if (isEntering) cosThetaTr *= -1; // why?
 
-	float etaEff = etaI / etaT;
-	// vec3 transmissionDir = vec3(etaEff * -wo.x, etaEff * -wo.y, cos_thetaT);
-	vec3 transmissionDir = refract(-viewDir, data.normal, etaEff);
-	float lodLevel = pow(data.roughness, 0.25f);
-	vec3 specularLighting = SampleEnvironment(transmissionDir, lodLevel);
-
-	return specularLighting;
+	// float etaEff = etaT / etaI ;
+	
+	vec3 transmissionDir = refract( inDir, data.normal, etaRatio);
+	float lodLevel = pow(data.roughness, 0.6f);
+	vec3 specularTransmission = SampleEnvironment(transmissionDir, lodLevel);
+	return specularTransmission; // + vec3(0.0f, 0.5 ,0);
 }
 
-vec3 ComputeScatteredLighting(vec3 reflection, vec3 transmission, SurfaceData data, vec3 lightDir)
+vec3 ComputeScatteredLighting(vec3 reflection, vec3 transmission, SurfaceData data, vec3 viewDir)
 {
-	float cosThetaIn = dot(lightDir, data.normal);
+	vec3 inDir = - viewDir;
+	float cosThetaIn = dot(inDir, data.normal);
 
 	float fresnel = FresnelDielectric(cosThetaIn, 1.0f, data.refractionIndex);
-
-	// interpolate, if fresnel = 1 there is only reflection, if fresnel = 0 there is only transmission
 	vec3 lighting = mix(transmission, reflection, fresnel);
-
 	lighting *= data.ambientOcclusion;
 
 	// // // what is this?

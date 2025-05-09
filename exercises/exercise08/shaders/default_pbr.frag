@@ -17,7 +17,7 @@ uniform sampler2D SpecularTexture;
 uniform vec3 CameraPosition;
 
 // Project specific
-uniform float refractionIndex;
+uniform float RefractionIndex;
 
 void main()
 {
@@ -27,12 +27,14 @@ void main()
 	// data.albedo = Color * texture(ColorTexture, TexCoord).rgb;
 	vec3 arm = texture(SpecularTexture, TexCoord).rgb;
 	data.ambientOcclusion = arm.x;
-	data.roughness        = arm.y;
-	data.metalness        = arm.z;
-	data.refractionIndex  = 1.5f; // should this be part of surface data?
+	// data.roughness        = arm.y;
+	data.roughness        = 0.1;
+	// data.metalness        = arm.z;
+	data.refractionIndex  = 1.2;
 
 	vec3 position = WorldPosition;
 	vec3 viewDir = GetDirection(position, CameraPosition);
-	vec3 color = ComputeLighting(position, data, viewDir, true);
+	vec3 inDir = GetDirection(CameraPosition, position);
+	vec3 color = ComputeLighting(position, data, viewDir, inDir, true);
 	FragColor = vec4(color.rgb, 1);
 }
