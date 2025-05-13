@@ -26,6 +26,11 @@
 SceneViewerApplication::SceneViewerApplication()
     : Application(1024, 1024, "Scene Viewer demo")
     , m_renderer(GetDevice())
+    , m_refractionIndex(1.5f)
+    , m_roughness(0.01f)
+    , m_reflectionIntensity(1.f)
+    , m_refractionIntensity(1.f)
+    , m_debugColors(glm::vec3(0.f))
 {
 }
 
@@ -53,6 +58,7 @@ void SceneViewerApplication::Update()
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
     m_scene.AcceptVisitor(rendererSceneVisitor);
+    
 }
 
 void SceneViewerApplication::Render()
@@ -176,7 +182,11 @@ void SceneViewerApplication::InitializeModels()
     m_defaultMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
     m_defaultMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
     m_defaultMaterial->SetUniformValue("Color", glm::vec3(1.0f));
-    m_defaultMaterial->SetUniformValue("RefractionIndex", 1.5f);
+    m_defaultMaterial->SetUniformValue("RefractionIndex", m_refractionIndex);
+    m_defaultMaterial->SetUniformValue("Roughness", m_roughness);
+    m_defaultMaterial->SetUniformValue("DebugColors", m_debugColors);
+    m_defaultMaterial->SetUniformValue("ReflectionIntensity", m_reflectionIntensity);
+    m_defaultMaterial->SetUniformValue("RefractionIntensity", m_refractionIntensity);
 
     // Configure loader
     ModelLoader loader(m_defaultMaterial);
@@ -207,8 +217,8 @@ void SceneViewerApplication::InitializeModels()
     // std::shared_ptr<Model> cameraModel = loader.LoadShared("models/camera/camera.obj");
     // m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", cameraModel));
 
-    std::shared_ptr<Model> teaSetModel = loader.LoadShared("models/tea_set/tea_set.obj");
-    m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", teaSetModel));
+    m_model = loader.LoadShared("models/tea_set/tea_set.obj");
+    m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", m_model));
 
     // std::shared_ptr<Model> clockModel = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
     // m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel));
@@ -230,6 +240,63 @@ void SceneViewerApplication::RenderGUI()
 
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
+   
+    // Draw GUI for surface properties
+    DrawSurfaceGUI();
 
     m_imGui.EndFrame();
+}
+
+// not working
+void SceneViewerApplication::DrawSurfaceGUI()
+{
+    unsigned int count = m_model->GetMaterialCount();
+    
+    if (auto window = m_imGui.UseWindow("Surface Properties"))
+    {
+
+        if(ImGui::SliderFloat("Refraction Index", &m_refractionIndex, 1.0f, 1.7f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("RefractionIndex", m_refractionIndex);
+            }
+        }
+        if (ImGui::SliderFloat("Roughness", &m_roughness, 0.01f, 0.5f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("Roughness", m_roughness);
+            }
+        }
+        
+    }
+    if (auto window = m_imGui.UseWindow("Debug"))
+    {
+        if (ImGui::SliderFloat("Refl Red", &m_debugColors[0], 0.0f, 1.0f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("DebugColors", m_debugColors);
+            }
+        }
+        
+        if (ImGui::SliderFloat("Tran Green", &m_debugColors[1], 0.0f, 1.0f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("DebugColors", m_debugColors);
+            }
+        }
+    
+        if (ImGui::SliderFloat("Refl Intensity", &m_reflectionIntensity, 0.0f, 1.0f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("ReflectionIntensity", m_reflectionIntensity);
+            }
+        }
+    
+        if (ImGui::SliderFloat("Tran Intensity", &m_refractionIntensity, 0.0f, 1.0f))
+        {
+            for (int i = 0; i < count; ++i) {
+                m_model->GetMaterial(i).SetUniformValue("RefractionIntensity", m_refractionIntensity);
+            }
+        }
+    }
 }

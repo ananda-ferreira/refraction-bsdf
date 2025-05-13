@@ -29,6 +29,7 @@ private:
     void InitializeRenderer();
 
     void RenderGUI();
+    void DrawSurfaceGUI();
 
 private:
     // Helper object for debug GUI
@@ -48,4 +49,13 @@ private:
 
     // Default material
     std::shared_ptr<Material> m_defaultMaterial;
+    
+    // BSDF
+    std::shared_ptr<Model> m_model;
+    float m_roughness;
+    float m_refractionIndex;
+    float m_refractionIntensity;
+    float m_reflectionIntensity;
+    glm::vec3 m_debugColors;
+
 };

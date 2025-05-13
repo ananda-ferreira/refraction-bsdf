@@ -37,43 +37,36 @@ vec3 ComputeLightDirection(vec3 position)
 	return LightAttenuation.y >= 0 ? GetDirection(position, LightPosition) : -LightDirection;
 }
 
-
-
 // BSDF Light
-vec3 ComputeBSDFLight(SurfaceData data, vec3 viewDir, vec3 inDir, vec3 position)
+vec3 ComputeBSDFLight(SurfaceData data, vec3 viewDir)
 {
-	vec3 lightDir = ComputeLightDirection(position);
-
 	vec3 reflection = ComputeSpecularReflection(data, viewDir);
-	vec3 transmission = ComputeSpecularTransmission(data, lightDir, viewDir, inDir);
+	vec3 transmission = ComputeSpecularTransmission(data, viewDir);
 	vec3 light = ComputeScatteredLighting(reflection, transmission, data, viewDir);
-
-	// what is attenuation
-	float attenuation = ComputeAttenuation(position, lightDir);
 	return light;
 }
 
 
 // light = brdf ? LightColor = Li() ? see render equation
-vec3 ComputeLight(SurfaceData data, vec3 viewDir, vec3 position)
+vec3 ComputeBSDFDirect(SurfaceData data, vec3 viewDir, vec3 position)
 {
 	vec3 lightDir = ComputeLightDirection(position);
 
-	vec3 specular = ComputeSpecularLighting(data, lightDir, viewDir);
-	vec3 light = CombineLighting( specular, data, lightDir, viewDir);
+	vec3 specular = ComputeSpecularReflectionDirect(data, lightDir, viewDir);
+	vec3 light = ComputeDirect(specular, data, lightDir, viewDir);
 
 	float attenuation = ComputeAttenuation(position, lightDir);
 	return light * LightColor * attenuation;
 }
 
 // called in pbr.frag
-vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir, vec3 inDir, bool indirect)
+vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir, bool indirect)
 {
-	vec3 light = ComputeLight(data, viewDir, position) * 0.5;
+	vec3 light = ComputeBSDFDirect(data, viewDir, position);
 	
 	if (indirect && LightIndirect)
 	{	
-		light += ComputeBSDFLight(data, viewDir, inDir, position);
+		light += ComputeBSDFLight(data, viewDir);
 	}
 
 	return light;
@@ -81,5 +74,5 @@ vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir, vec3 inDir, 
 
 vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir)
 {
-	return ComputeLighting(position, data, viewDir, -viewDir, true);
+	return ComputeLighting(position, data, viewDir, true);
 }

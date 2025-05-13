@@ -10,31 +10,32 @@ out vec4 FragColor;
 
 //Uniforms
 uniform vec3 Color; // 1.0
-uniform sampler2D ColorTexture;
 uniform sampler2D NormalTexture;
-uniform sampler2D SpecularTexture;
+uniform sampler2D ColorTexture; // not used
+uniform sampler2D SpecularTexture; // not sued
 
 uniform vec3 CameraPosition;
 
-// Project specific
+// BSDF
 uniform float RefractionIndex;
+uniform float Roughness;
+uniform vec3 DebugColors;
+uniform float ReflectionIntensity;
+uniform float RefractionIntensity;
 
 void main()
 {
 	SurfaceData data;
 	data.normal = SampleNormalMap(NormalTexture, TexCoord, normalize(WorldNormal), normalize(WorldTangent), normalize(WorldBitangent));
-	data.albedo = Color; 
-	// data.albedo = Color * texture(ColorTexture, TexCoord).rgb;
-	vec3 arm = texture(SpecularTexture, TexCoord).rgb;
-	data.ambientOcclusion = arm.x;
-	// data.roughness        = arm.y;
-	data.roughness        = 0.1;
-	// data.metalness        = arm.z;
-	data.refractionIndex  = 1.2;
+	data.roughness        = Roughness;
+	data.refractionIndex  = RefractionIndex;
+	data.reflectionRed  = DebugColors.r;
+	data.refractionGreen  = DebugColors.g;
+	data.reflectionIntensity = ReflectionIntensity;
+	data.refractionIntensity = RefractionIntensity;
 
 	vec3 position = WorldPosition;
 	vec3 viewDir = GetDirection(position, CameraPosition);
-	vec3 inDir = GetDirection(CameraPosition, position);
-	vec3 color = ComputeLighting(position, data, viewDir, inDir, true);
+	vec3 color = ComputeLighting(position, data, viewDir, true);
 	FragColor = vec4(color.rgb, 1);
 }
