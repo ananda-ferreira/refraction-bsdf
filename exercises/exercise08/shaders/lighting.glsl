@@ -37,7 +37,6 @@ vec3 ComputeLightDirection(vec3 position)
 	return LightAttenuation.y >= 0 ? GetDirection(position, LightPosition) : -LightDirection;
 }
 
-// BSDF Light
 vec3 ComputeBSDFLight(SurfaceData data, vec3 viewDir)
 {
 	vec3 reflection = ComputeSpecularReflection(data, viewDir);
@@ -46,8 +45,6 @@ vec3 ComputeBSDFLight(SurfaceData data, vec3 viewDir)
 	return light;
 }
 
-
-// light = brdf ? LightColor = Li() ? see render equation
 vec3 ComputeBSDFDirect(SurfaceData data, vec3 viewDir, vec3 position)
 {
 	vec3 lightDir = ComputeLightDirection(position);
@@ -59,20 +56,19 @@ vec3 ComputeBSDFDirect(SurfaceData data, vec3 viewDir, vec3 position)
 	return light * LightColor * attenuation;
 }
 
-// called in pbr.frag
-vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir, bool indirect)
+vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir, bool direct)
 {
-	vec3 light = ComputeBSDFDirect(data, viewDir, position);
+	vec3 light = ComputeBSDFLight(data, viewDir);
 	
-	if (indirect && LightIndirect)
+	if (direct)
 	{	
-		light += ComputeBSDFLight(data, viewDir);
+		light += ComputeBSDFDirect(data, viewDir, position);
 	}
 
 	return light;
 }
 
-vec3 ComputeLighting(vec3 position, SurfaceData data, vec3 viewDir)
+vec3 ComputeLighting(SurfaceData data, vec3 viewDir)
 {
-	return ComputeLighting(position, data, viewDir, true);
+	return ComputeLighting(vec3(0.f), data, viewDir, false);
 }

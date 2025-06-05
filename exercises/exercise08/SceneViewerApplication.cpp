@@ -211,17 +211,17 @@ void SceneViewerApplication::InitializeModels()
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
     // Load models
-    // std::shared_ptr<Model> chestModel = loader.LoadShared("models/treasure_chest/treasure_chest.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("treasure chest", chestModel));
+    // m_model = loader.LoadShared("models/treasure_chest/treasure_chest.obj");
+    // m_scene.AddSceneNode(std::make_shared<SceneModel>("treasure chest", m_model));
 
-    // std::shared_ptr<Model> cameraModel = loader.LoadShared("models/camera/camera.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", cameraModel));
+    // m_model = loader.LoadShared("models/camera/camera.obj");
+    // m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", m_model));
 
     m_model = loader.LoadShared("models/tea_set/tea_set.obj");
     m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", m_model));
 
-    // std::shared_ptr<Model> clockModel = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel));
+    // m_model = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
+    // m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", m_model));
 }
 
 void SceneViewerApplication::InitializeRenderer()
@@ -251,11 +251,11 @@ void SceneViewerApplication::RenderGUI()
 void SceneViewerApplication::DrawSurfaceGUI()
 {
     unsigned int count = m_model->GetMaterialCount();
-    
-    if (auto window = m_imGui.UseWindow("Surface Properties"))
+
+    if (auto window = m_imGui.UseWindow("Material Properties"))
     {
 
-        if(ImGui::SliderFloat("Refraction Index", &m_refractionIndex, 1.0f, 1.7f))
+        if(ImGui::SliderFloat("Refraction Index", &m_refractionIndex, 1.0f, 2.42f))
         {
             for (int i = 0; i < count; ++i) {
                 m_model->GetMaterial(i).SetUniformValue("RefractionIndex", m_refractionIndex);
