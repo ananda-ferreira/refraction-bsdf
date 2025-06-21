@@ -40,7 +40,7 @@ float FresnelBSDF(float cosThetaIn, float etaIn, float etaTr)
 	float etaI = etaIn, etaT = etaTr;
 	cosThetaIn = clamp(cosThetaIn, -1, 1);
 
-	// // Relevant for ray tracing 
+	// // Irrelevant for the current setup
 	// bool isEntering = cosThetaIn > 0;
 	// if (!isEntering)
 	// {
@@ -92,57 +92,6 @@ float GeometrySmith(vec3 normal, vec3 inDir, vec3 outDir, float roughness)
 	//otal occlusion is a product of 
 	return ggxIn * ggxOut;
 }
-
-/**
-BSDF environemnt
-*/
-vec3 ComputeSpecularReflection(SurfaceData data, vec3 viewDir)
-{
-	vec3 inDir = -viewDir;
-	vec3 reflectionDir = reflect(inDir, data.normal);
-
-	// float lodLevel = pow(data.roughness, 0.25f);
-	vec3 specularReflection = SampleEnvironment(reflectionDir, 0.0f);
-	
-	return (specularReflection + vec3(data.reflectionRed,0,0)) * data.reflectionIntensity;
-}
-
-vec3 ComputeSpecularTransmission(SurfaceData data, vec3 viewDir)
-{
-	float cosThetaIn = clamp(dot(data.normal, viewDir), -1, 1); // viewDir needs to be outgoing, otherwise isEntering falsified 
-	float etaIOverT =  1.0f / data.refractionIndex ;
-
-	// // Relevant for ray tracing
-	// bool isEntering = cosThetaIn > 0;
-	// if (!isEntering)
-	// {
-	// 	etaIOverT = 1 / etaIOverT;
-	// 	cosThetaIn = abs(cosThetaIn); 
-	// }
-
-	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaIOverT);
-	if(cosThetaTr <= 0.0f) return vec3(0.f); // total internal reflection
-
-	vec3 inDir = -viewDir;
-	etaIOverT = 1/etaIOverT;
-	vec3 transmissionDir = etaIOverT * inDir + (etaIOverT * cosThetaIn - cosThetaTr) * data.normal; // *wt = eta * -wi + (eta * cosThetaI - cosThetaT) * Vector3f(n);
-
-	// float lodLevel = pow(data.roughness, 0.6f);
-	vec3 specularTransmission = SampleEnvironment( transmissionDir, 0.f);
-	
-	return (specularTransmission + vec3(0.0f, data.refractionGreen ,0)) * data.refractionIntensity;
-}
-
-vec3 ComputeScatteredLighting(vec3 reflection, vec3 transmission, SurfaceData data, vec3 viewDir)
-{
-	vec3 inDir = viewDir;
-	float cosThetaIn = dot(inDir, data.normal);
-	float fresnel = FresnelBSDF(cosThetaIn, 1.0f, data.refractionIndex);
-	vec3 lighting = mix(transmission, reflection, fresnel);
-
-	return lighting;
-}
-
 /**
 BSDF Direct Lighting
 */
@@ -174,6 +123,56 @@ vec3 ComputeDirect(vec3 reflection, SurfaceData data, vec3 lightDir, vec3 viewDi
 	// Move the incidence factor to affect the combined light value
 	float incidence = cosThetaIn;
 	lighting *= incidence;
+
+	return lighting;
+}
+
+/**
+BSDF environemnt
+*/
+vec3 ComputeSpecularReflection(SurfaceData data, vec3 viewDir)
+{
+	vec3 inDir = -viewDir;
+	vec3 reflectionDir = reflect(inDir, data.normal);
+
+	float lodLevel = pow(data.roughness, 0.25f);
+	vec3 specularReflection = SampleEnvironment(reflectionDir, lodLevel);
+
+	return (specularReflection + vec3(data.reflectionRed,0,0)) * data.reflectionIntensity;
+}
+
+vec3 ComputeSpecularTransmission(SurfaceData data, vec3 viewDir)
+{
+	float cosThetaIn = clamp(dot(data.normal, viewDir), -1, 1); // viewDir needs to be outgoing, otherwise isEntering falsified 
+	float etaIOverT =  1.0f / data.refractionIndex ;
+
+	// // Irrelevant for the current setup
+	// bool isEntering = cosThetaIn > 0;
+	// if (!isEntering)
+	// {
+	// 	etaIOverT = 1 / etaIOverT;
+	// 	cosThetaIn = abs(cosThetaIn); 
+	// }
+
+	float cosThetaTr = GetCosThetaTr(cosThetaIn, etaIOverT);
+	if(cosThetaTr <= 0.0f) return vec3(0.f); // total internal reflection
+
+	vec3 inDir = -viewDir;
+	etaIOverT = 1/etaIOverT;
+	vec3 transmissionDir = etaIOverT * inDir + (etaIOverT * cosThetaIn - cosThetaTr) * data.normal; // *wt = eta * -wi + (eta * cosThetaI - cosThetaT) * Vector3f(n);
+
+	float lodLevel = pow(data.roughness, 0.6f);
+	vec3 specularTransmission = SampleEnvironment( transmissionDir, lodLevel);
+	
+	return (specularTransmission + vec3(0.0f, data.refractionGreen ,0)) * data.refractionIntensity;
+}
+
+vec3 ComputeScatteredLighting(vec3 reflection, vec3 transmission, SurfaceData data, vec3 viewDir)
+{
+	vec3 inDir = viewDir;
+	float cosThetaIn = dot(inDir, data.normal);
+	float fresnel = FresnelBSDF(cosThetaIn, 1.0f, data.refractionIndex);
+	vec3 lighting = mix(transmission, reflection, fresnel);
 
 	return lighting;
 }

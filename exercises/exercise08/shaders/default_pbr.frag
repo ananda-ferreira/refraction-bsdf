@@ -27,6 +27,7 @@ void main()
 {
 	SurfaceData data;
 	data.normal = SampleNormalMap(NormalTexture, TexCoord, normalize(WorldNormal), normalize(WorldTangent), normalize(WorldBitangent));
+	vec4 albedo = texture(ColorTexture, TexCoord);
 	data.roughness        = Roughness;
 	data.refractionIndex  = RefractionIndex;
 	data.reflectionRed  = DebugColors.r;
@@ -38,4 +39,5 @@ void main()
 	vec3 viewDir = GetDirection(position, CameraPosition);
 	vec3 color = ComputeLighting(position, data, viewDir, true);
 	FragColor = vec4(color.rgb, 1);
+	// FragColor = vec4(albedo.rgb, 1);
 }

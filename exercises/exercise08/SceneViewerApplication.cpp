@@ -27,7 +27,7 @@ SceneViewerApplication::SceneViewerApplication()
     : Application(1024, 1024, "Scene Viewer demo")
     , m_renderer(GetDevice())
     , m_refractionIndex(1.5f)
-    , m_roughness(0.01f)
+    , m_roughness(0.02f)
     , m_reflectionIntensity(1.f)
     , m_refractionIntensity(1.f)
     , m_debugColors(glm::vec3(0.f))
@@ -170,7 +170,7 @@ void SceneViewerApplication::InitializeMaterial()
 
 void SceneViewerApplication::InitializeModels()
 {
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/pamp-env-2.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/pamp-env.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
 
     m_skyboxTexture->Bind();
     float maxLod;
@@ -211,17 +211,9 @@ void SceneViewerApplication::InitializeModels()
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
     // Load models
-    // m_model = loader.LoadShared("models/treasure_chest/treasure_chest.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("treasure chest", m_model));
-
-    // m_model = loader.LoadShared("models/camera/camera.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", m_model));
 
     m_model = loader.LoadShared("models/tea_set/tea_set.obj");
     m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", m_model));
-
-    // m_model = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
-    // m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", m_model));
 }
 
 void SceneViewerApplication::InitializeRenderer()
@@ -247,7 +239,6 @@ void SceneViewerApplication::RenderGUI()
     m_imGui.EndFrame();
 }
 
-// not working
 void SceneViewerApplication::DrawSurfaceGUI()
 {
     unsigned int count = m_model->GetMaterialCount();
