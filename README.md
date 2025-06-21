@@ -4,7 +4,7 @@ This project implements **refraction through glass** using **Physically Based Re
 
 Despite using **rasterization**, which limits physical accuracy, the project successfully achieves a visually plausible approximation of glass refraction—suitable for stylized rendering and educational purposes.
 
-![Alt Text](screenshots/final-ior-1.5.png)
+![Alt Text](Screenshots/final-ior-1.5.png)
 
 ---
 
